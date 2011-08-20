@@ -1,0 +1,106 @@
+package mysqlengine;
+option java_package = "com.relationalcloud.backend";
+
+// Message used as the input to mysqlnode. It is wrapped inside a dtxn transaction.
+// Clients can send a sequence of SQL statements as part of a single message/transaction.
+message SQLBatch {
+    repeated Statement statement = 1;
+}
+
+// Message used for the JDBC protocol, set to the coordinator.
+message SQLTransactionFragment {
+    // Unique id to connect this batch with previous batches in a single transaction. If this
+    // id is new, this will automatically start a new transaction.
+    required int32 transaction_id = 1;
+
+    // If true, this batch should be committed in autocommit mode.
+    optional bool auto_commit = 2 [default = false];
+
+    // Name of the database this statement references
+    optional string database_name = 3;
+
+    // Work to perform
+    required SQLBatch batch = 4;
+}
+
+// Clients get back a sequence of result sets
+message SQLBatchResults {
+    repeated SQLResultSet result = 1;
+}
+
+message Statement {
+    required string sql = 1;
+
+    message MigrateStatement {
+        // Statement to import the data from the original partition.
+        required string import_sql = 1;
+
+        // Name of the destination table where the data will be inserted.
+        required string destination_table = 2;
+    }
+
+    repeated MigrateStatement migrate_statement = 2;
+}
+
+// TODO: This was once part of statement, and probably should be again in the future to avoid
+// stringification.
+message Argument {
+    required int32 type       = 1;
+    optional int32 int32Val   = 2;
+    optional int64 int64Val   = 3;
+    optional float floatVal   = 4;
+    optional double doubleVal = 5;
+    optional string stringVal = 6;
+    optional bytes bytesVal   = 7;
+}
+
+// Contains the results of a single SQL statement.
+// TODO: Rename this to ResultSet, once we've switched to protocol buffers.
+message SQLResultSet {
+    // TODO: Figure out a way to optionally turn this off? For small queries, this sucks.
+    message Column {
+        // This is the name for the column as used in the query
+        required string query_name = 1;
+
+        // TODO: Do we need to return the type?
+        optional int32 type = 2;
+    }
+    repeated Column column = 1;
+
+    message Row {
+        // Sequence of serialized values, one per column. A zero length value may be null. See
+        // null_values.
+        repeated bytes value = 1;
+
+        // Sequence of column indicies that represent nulls. Index 0 is the first column. The
+        // value must be a zero length array.
+        repeated int32 null_column = 2;
+    }
+
+    // TODO: Serialize this as a 1D array?
+    repeated Row row = 2;
+
+    // Count of rows affected by an UPDATE, INSERT or DELETE statement
+    optional int64 affected_rows = 3;
+
+    // MySQL uses this to return the *first* autoincrement key generated for an insert statement.
+    // If there were multiple inserts, the sequence is controlled by the auto_increment_increment
+    // variable. The JDBC driver uses this to synthesize the sequence as a ResultSet.
+    optional int64 auto_increment_insert_id = 4;
+
+    optional int32 error_code = 5;
+    optional string error_message = 6;
+}
+
+message SQLFinish {
+    required int32 transaction_id = 1;
+    required bool commit = 2;
+}
+
+message SQLFinishResult {
+}
+
+service SQLConnection {
+    rpc Execute (SQLTransactionFragment) returns (SQLBatchResults);
+    rpc Finish (SQLFinish) returns (SQLFinishResult);
+}

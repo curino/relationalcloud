@@ -1,0 +1,8 @@
+dtxn
+====
+
+The router currently uses Evan's dtxn system. The java components are
+checked in as a compiled jar (lib/dtxn.jar). However, if you need the source
+code, it can be obtained with:
+
+hg clone http://people.csail.mit.edu/evanj/hg/index.cgi/javatxn/

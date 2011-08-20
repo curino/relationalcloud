@@ -1,0 +1,49 @@
+Release Notes for hMETIS 2.0pre1
+--------------------------------------------------------------------------
+
+1. Introduction
+
+This is the first pre-release of hMETIS 2.0, which represents a nearly 
+complete rewrite of hMETIS's original code base. It is still a work in
+progress, and was made available to the community so that it can help
+in identifying any bugs that it may contain.
+
+
+2. Major Changes/New Features
+
+From a functionality stand-point, this new release contains the following 
+major changes and/or enhancements.
+
+- A new set of coarsening schemes that lead to better and more stable cuts.
+  Internal testing on ISPD98 benchmark showed that the average cut of the
+  new methods are on the average around 20% better than the previous release,
+  whereas the minimum cuts are about 4% better.
+- Better refinement routines for circuits with non-unit cell weights.
+- Floating point numbers for cell and net weights.
+- Support for 64bit architectures.
+- KPM-based k-way refinement routines.
+- Redesigned the command-line interface for GNU-like argument passing.
+
+
+3. Upcoming Features
+
+- Multi-constraint partitioning.
+- Partitioning for FPGA designs with different cell types.
+
+
+4. What is Included in this Release 
+
+In this pre-release, 32bit and 64bit linux binaries are only provided. The 
+associated libraries and binaries for other architectures will be provided 
+in future releases.
+
+hMETIS's manual has not been updated; however, information on how to run
+the command line program can be obtained by just typing:
+  >  hmetis2.0pre1 -help
+  
+Also, the only change in the input file format is that the weights of the
+nets and cell can now be floating point numbers. Of course, the old integer
+weights can still be used.
+
+
+

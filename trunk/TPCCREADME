@@ -1,0 +1,106 @@
+See README, but this is what I did to get a router working for TPC-C.
+
+Scroll down for scripts and commands for running the TPC-C experiment
+
+
+1. Create a MySQL database named "test" as you usually would (eg. load a TPC-C database, or create your own). You can use another name, but you will need to substitute the appropriate name in the directios below. For example:
+
+echo "create database test;" | mysql --socket=[some socket] --user=root
+
+
+2. Create the router database:
+
+echo "create database router;" | mysql --user root --host=127.0.0.1
+mysql --user root --host=127.0.0.1 router < src/main/scripts/routing/schema.sql 
+
+
+3. Create an entry routing "test" to partition 0:
+
+echo 'insert into dbwiderouter values ("test", 0, 0);' | mysql --user root --host=127.0.0.1 router
+
+
+4. Copy the schema for the database "test" from the information_schema database:
+
+echo 'insert into SCHEMATA select * from information_schema.SCHEMATA where SCHEMA_NAME = "tpcc32";' | mysql --user root --host=127.0.0.1 router
+echo 'insert into TABLES select * from information_schema.tables where table_schema = "test";' | mysql --user root --host=127.0.0.1 router
+echo 'insert into COLUMNS select * from information_schema.columns where table_schema = "test";' | mysql --user root --host=127.0.0.1 router
+echo "insert into KEY_COLUMN_USAGE select * from information_schema.KEY_COLUMN_USAGE where table_schema = 'test';" | mysql --user root --host=127.0.0.1 router
+
+
+5. Create a configuration file that describes how many partitions the database has. In this case, we'll create one partition:
+
+printf "partition one\n127.0.0.1 12345" > single-partition.conf
+
+
+6. Start mysqlnode. This manages transactions in front of MySQL:
+
+../hstore/build/mysqlengine/mysqlnode single-partition.conf 0 0 [database name] [path to mysql socket]
+
+
+7. Start protodtxncoordinator. This manages distributed transactions across multiple mysqlnodes:
+
+../hstore/build/protodtxn/protodtxncoordinator 12347 single-partition.conf
+
+
+8. Start the router, which talks to protodtxncoondinator (assumes your MySQL routing database is listening on port 3306; change as needed).
+
+java -ea -cp classes:lib/protobuf-java-2.3.0.jar:lib/dtxn.jar:lib/mysql-connector-java-5.1.10-bin.jar com.relationalcloud.jdbc2.RouterServer localhost 12347 22347 jdbc:mysql://localhost:3306/router
+
+or use src/main/scripts/test.py (needs editing to make the paths correct)
+
+
+FOR TPC-C TWO PARTITIONS:
+
+Load the following to route 16 warehouses to 2 partitions
+
+(cat <<EOF
+delete from treerouter;
+delete from tablewiderouter;
+delete from dbwiderouter;
+insert into treerouter values  ('test','0','customer' , 'c_w_id > 8\n|   c_w_id <= 16: 1 (0.0/0.0)\nc_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','district' , 'd_w_id > 8\n|   d_w_id <= 16: 1 (0.0/0.0)\nd_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','history' , 'h_c_w_id > 8\n|   h_c_w_id <= 16: 1 (0.0/0.0)\nh_c_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','new_order' , 'no_w_id > 8\n|   no_w_id <= 16: 1 (0.0/0.0)\nno_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','oorder' , 'o_w_id > 8\n|   o_w_id <= 16: 1 (0.0/0.0)\no_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','order_line' , 'ol_w_id > 8\n|   ol_w_id <= 16: 1 (0.0/0.0)\nol_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','stock' , 's_w_id > 8\n|   s_w_id <= 16: 1 (0.0/0.0)\ns_w_id <= 8: 0 (0.0/0.0)' );
+insert into treerouter values  ('test','0','warehouse' , 'w_id > 8\n|   w_id <= 16: 1 (0.0/0.0)\nw_id <= 8: 0 (0.0/0.0)' );
+
+-- hack for items table: map it to -1 (any partition)
+insert into tablewiderouter values ('test','0','item', '-1');
+EOF
+) | mysql --user root --host=127.0.0.1 router
+
+
+RUNNING ACROSS MULTIPLE PARTITIONS
+
+Use src/main/scripts/tpcc_partition_sql.py to generate the rotuer SQL. It may need editing.
+
+The following commands were used to set up the experiment across the farm machines.
+
+Give permissions across the network:
+
+GRANT ALL ON test.* TO root@'128.30.%';
+GRANT ALL ON test.* TO root@'18.%';
+
+
+Commands run on each node to start the server:
+
+ssh farm13 exit
+ssh vise-farm exit
+rm -rf dbscale/foo/data
+mkdir -p dbscale/foo
+scp farm13:dbscale/foo/my.cnf dbscale/foo
+scp farm13:hstore/build/mysqlengine/mysqlnode .
+scp farm13:hstore/single.conf .
+~/mysql-5.4.3-beta-linux-i686-glibc23/scripts/mysql_install_db --defaults-file=/home/evanj/dbscale/foo/my.cnf --basedir=/home/evanj/mysql-5.4.3-beta-linux-i686-glibc23/ --datadir=/home/evanj/dbscale/foo/data
+screen -c wtf2
+
+
+Contents of wtf2:
+
+screen taskset --cpu-list 0 /u/evanj/mysql-5.4.3-beta-linux-i686-glibc23/bin/mysqld --defaults-file=/home/evanj/dbscale/foo/my.cnf --basedir=/home/evanj/mysql-5.4.3-beta-linux-i686-glibc23/ --datadir=/home/evanj/dbscale/foo/data
+screen bash -l
+stuff "sleep 40\015time ssh vise-farm cat tpcc-16w.sql.bz2 | bzcat | mysql --socket=dbscale/foo/data/mysql.sock --user=root test\015mysql --socket=dbscale/foo/data/mysql.sock --user=root test\015"
+screen bash -l
+stuff "sleep 40\015./mysqlnode single.conf 0 0 dbscale/foo/data/mysql.sock\015"
