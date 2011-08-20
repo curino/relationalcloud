@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. -->
+<project basedir="." default="build" name="relationalcloud">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="../../../../Applications/eclipse3.4"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="relationalcloud.classpath">
+        <pathelement location="classes"/>
+        <pathelement location="../tsqlparser/bin"/>
+        <pathelement location="lib/colt.jar"/>
+        <pathelement location="lib/commons-io-1.4.jar"/>
+        <pathelement location="lib/log4j-1.2.15.jar"/>
+        <pathelement location="lib/tuple.jar"/>
+        <pathelement location="lib/mysql-connector-java-5.1.10-bin.jar"/>
+        <pathelement location="lib/shiftone-cache.jar"/>
+        <pathelement location="lib/weka.jar"/>
+        <pathelement location="lib/bloomfilter.jar"/>
+        <pathelement location="lib/google-collect-1.0.jar"/>
+        <pathelement location="lib/gson-1.7.1.jar"/>
+        <pathelement location="lib/squiggle-2.0.0.jar"/>
+        <pathelement location="lib/dtxn.jar"/>
+        <pathelement location="lib/opencsv-2.2.jar"/>
+        <pathelement location="lib/protobuf-java-2.3.0.jar"/>
+    </path>
+
+    <path id="classpath.test">
+        <path refid="relationalcloud.classpath"/>
+        <pathelement location="classes/test"/>
+        <pathelement location="lib/junit-4.7.jar"/>
+    </path>
+
+    <target name="init">
+        <mkdir dir="classes"/>
+        <copy includeemptydirs="false" todir="classes">
+            <fileset dir="src/main/java" excludes="**/*.launch, **/*.java"/>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="classes"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="classes" source="${source}" target="${target}">
+            <src path="src/main/java"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="NetworkProtocolTest">
+        <java classname="com.relationalcloud.main.NetworkProtocolTest" failonerror="true" fork="yes">
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="RouterClient">
+        <java classname="com.relationalcloud.network.RouterClient" failonerror="true" fork="yes">
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="RouterNoMysql">
+        <java classname="com.relationalcloud.network.RouterNoMysql" failonerror="true" fork="yes">
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="RouterServer">
+        <java classname="com.relationalcloud.network.RouterServer" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=partitioningscheme.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="StressTestRouter">
+        <java classname="com.relationalcloud.main.StressTestRouter" failonerror="true" fork="yes">
+            <jvmarg line="-Xms500m -Xmx1000m"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TemplateExtractorMain">
+        <java classname="com.relationalcloud.main.TemplateExtratorMain" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TestClientServerRouter">
+        <java classname="com.relationalcloud.main.TestClientServerRouter" failonerror="true" fork="yes">
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TestParser">
+        <java classname="com.relationalcloud.main.TestParser" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TestRouter">
+        <java classname="com.relationalcloud.main.TestRouter" failonerror="true" fork="yes">
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TestRouterInitializer">
+        <java classname="com.relationalcloud.main.TestRouterInitializer" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=workloadanalysis.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="WorkloadGeneratorMain">
+        <java classname="com.relationalcloud.main.WorkloadGeneratorMain" failonerror="true" fork="yes">
+            <arg line="2 2 150 /Users/krl/Desktop/workloadoutput"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="MysqlLogQueryLoaderTest">
+        <java classname="com.relationalcloud.main.MysqlLogQueryLoaderTest" failonerror="true" fork="yes">
+            <arg line="/Users/krl/Desktop/mw1.11_256_mysqllog.log    mw_1_11"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TestBlanketFilter">
+        <java classname="com.relationalcloud.main.TestBlanketFilter" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="TestReadMostlyFilter">
+        <java classname="com.relationalcloud.main.TestReadMostlyReplicationFilter" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="ALL FILTERS AND GRAPH POPULATION">
+        <java classname="com.relationalcloud.main.QueryLog2FilteredGraph" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="OUTPUT Graph METIS">
+        <java classname="com.relationalcloud.main.GenerateMETISGraph" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <arg line="metisgraph.txt"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="JustifyAgnosticPartitioning">
+        <java classname="com.relationalcloud.main.JustifyAgnosticPartitioning" failonerror="true" fork="yes">
+            <jvmarg line="-Dprop=tpcclocal.properties -Xms50M -Xmx500M"/>
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+    <target name="BloomFilterInitialTest">
+        <java classname="com.relationalcloud.main.BloomFilterInitialTest" failonerror="true" fork="yes">
+            <classpath refid="relationalcloud.classpath"/>
+        </java>
+    </target>
+
+
+<!-- Common macro for running junit tests in both the test and runtest targets -->
+<macrodef name="RunJunit">
+    <attribute name="haltonfailure" default="yes" />
+    <element name="testspecification" implicit="yes" />
+    <sequential>
+        <junit printsummary="on" haltonfailure="@{haltonfailure}" failureproperty="junit.failed" fork="true" forkmode="once">
+            <classpath refid="classpath.test" />
+            <formatter type="plain" usefile="false"/>
+            <assertions><enable/></assertions>
+            <testspecification/>
+        </junit>
+    </sequential>
+</macrodef>
+
+<target name="build-test" depends="build-project">
+    <mkdir dir="classes/test"/>
+    <javac debug="true" debuglevel="${debuglevel}" destdir="classes/test" source="${source}" target="${target}">
+        <src path="src/test/java"/>
+        <classpath refid="classpath.test"/>
+    </javac>
+</target>
+
+<target name="test" depends="build-test" description="Run all unit tests">
+    <RunJunit>
+        <batchtest>
+            <fileset dir="classes/test">
+                <include name="**/*Test.class"/>
+                <exclude name="**/*$*.class"/>
+            </fileset>
+        </batchtest>
+    </RunJunit>
+</target>
+
+</project>
+<!--
+vim: et sw=4 ts=4
+-->

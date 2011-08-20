@@ -1,0 +1,3 @@
+To run yahoo benchmark you need to pass a config file like this:
+./yahooBenchmark.sh ../../resources/config/yahooBenchmark/yahoobench_zipf.properties 
+

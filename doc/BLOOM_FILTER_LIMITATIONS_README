@@ -1,0 +1,6 @@
+------ BLOOM FILTER LIMITATIONS --------
+
+KNOWN LIMITATIONS:
+1) supports only equality statements
+2) speed can be improved by factorizing hashing across multiple individual bloom filter within the multi-bloom filter
+3) false positive can be reduce implementing a full featured Bloomier Filter instead of the multi-bloom we have at the moment.  

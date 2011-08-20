@@ -1,0 +1,14 @@
+Zoltan URLs
+
+- http://www.cs.sandia.gov/Zoltan/Zoltan_download.html
+- http://www.cs.sandia.gov/~kddevin/Zoltan_Distributions/zoltan_distrib_v3.2.tar.gz
+
+parallel applications and architectures
+
+- partitioning and load balancing for emerging parallel applications and
+  architectures <http://www.cs.sandia.gov/~kddevin/papers/pp04.pdf>
+
+twitter
+
+- 4.3M pairs, 40K followees, 2.3M followers, .7M shared followers
+  - 2: 15%, 3: 6%, 4: 3%, 5: 1.8%, 6: 1.1%, 7: 0.7%

@@ -1,0 +1,171 @@
+% Schism database layout optimizer
+
+<http://www.relationalcloud.com/>
+
+What is Schism
+==============
+
+Schism is a graph-based workload-driven DB partitioner. 
+Schism inputs are a DB to be partitioned, an trace of execution of a representative 
+workload (a mysql general_log in table format is the current input), and "k" the number
+of partitions in which you want the DB to be partitioned.
+The output is a replication/partitioning strategy, which can be hash-partitioning, 
+range-partitioning, per-tuple partitioning. 
+
+This project contains also the middleware runtime capable of distributed transactions and query routing,
+based on the output of Schism.
+
+Requirements
+============
+
+- GNU userland (bash, coreutils, make)
+- Java 6
+
+Build
+=====
+
+Build the Java sources with `ant`.
+
+Running
+=======
+
+Run the scripts in `src/main/scripts/dataset_preparation/` and
+`src/main/scripts/partitioning/`.
+
+The scripts all use a Java properties configuration file, of which we've
+provided a few in `src/main/resources/config/`.
+
+With no arguments, they will use `default.properties`. You can either specify
+another configuration file as an argument on the command line or export the
+environment variable `SCHISM_CFG`.
+
+
+
+More
+====
+
+Further documentation can be found in the `docs/` directory.
+
+
+Instructions for getting started with the distributed query executor
+====================================================================
+
+# put this into your ~/.hgrc:
+[ui]
+username = First Last <email@example.com>
+[diff]
+git = 1
+[extensions]
+hgext.mq=
+
+### CHECK OUT STUFF
+
+# check out the dtxn code from evan's repository
+hg clone http://people.csail.mit.edu/evanj/hg/index.cgi/hstore/
+
+# also check out his build system, which is needed to build dtxn
+hg clone http://people.csail.mit.edu/evanj/hg/index.cgi/stupidbuild
+
+# check out the distributed query executor from the main group svn repository
+svn co svn+ssh://svn.csail.mit.edu/afs/csail/group/db/REPOS/relationalcloud.com/partitioner/trunk partitioner
+
+### BUILD STUFF
+
+# build dtxn, after editing buildhack.sh to point to the correct stupidbuild directory
+# if edit buildhack.sh, do the following:
+# hg qnew -f stupidbuild-path
+
+cd hstore
+hg qimport buildhack-linux.diff
+hg qpush
+./buildhack.sh
+
+# build distributed query executor
+cd ../partitioner
+ant
+
+### RUN STUFF
+
+# You need to have MySQL running already
+
+# 1. Start mysqlnode in front of MySQL
+# it needs a configuration file to figure out what port to listen on:
+cd hstore
+printf "node1\nlocalhost 50000\n" > mysqlnode.conf
+build/mysqlengine/mysqlnode mysqlnode.conf 0 0 [database name] [mysql socket]
+# it should print "listening on port 50000"
+
+
+# 2. Start protodtxncoordinator to talk to mysqlnode
+build/protodxn/protodtxncoordinator 50001 mysqlnode.conf --lock
+# it should print "listening on port 50001"
+
+
+# 3. Start the router
+cd partitioner
+java -ea -cp classes:lib/protobuf-java-2.3.0.jar:lib/dtxn.jar:lib/tuple.jar:lib/mysql-connector-java-5.1.10-bin.jar \
+        com.relationalcloud.jdbc2.RouterServer localhost 50001 \
+        50002 jdbc:mysql://[router database host:port]/[router db]
+# This won't say anything
+
+
+
+### ALTERNATIVE: Use test.py. However, it will need editing.
+### TODO: This is out of date.
+
+# put test.py into the top-level directory where you checked everything out
+cp src/main/scripts/test.py ../../..
+
+# create symlinks to all the configuration files, placing them in the top-level partitioner trunk directory
+ln -s src/main/resources/config/coord.properties
+ln -s src/main/resources/config/databases.properties
+ln -s src/main/resources/config/server.properties
+
+# put this into a file alongside test.py called shepherd.conf:
+-n
+127.0.0.1 12345                                                                 
+
+# if you already have previously running Shepherd/protodtxn processes, slaughter them to free up their ports (e.g. if you see "Error binding to port" or "java.net.BindException: Address already in use")
+pkill -f protodtxn
+pkill -f Shepherd
+
+# run everything: this will start (in this order): Shepherd backend server, dtxn backend node, dtxn frontend node, and Shepherd frontend server
+cd ../../.. # should be in top-level
+python test.py
+
+# run a jTPCC client (or any other application that runs against the JDBC interface of Shepherd frontend)
+cd packdb/trunk/bench
+ant # build
+cd ../ # should be in packdb/trunk
+mkdir bench/run/reports # don't ask
+CLASSPATH=../../../../partitioner/trunk/classes ./main.bash rc-tpcc
+
+
+Notes on Setting up Database
+====
+
+* Create a MySQL instance for the routing metadata:
+
+mysql --host=127.0.0.1 --user=root test < src/main/scripts/routing/schema.sql
+
+
+* Create a new "database wide" descriptor for the database:
+
+insert into dbwiderouter values ("test", 0, 0);
+
+
+* Create a new schema for the database, or copy it from MySQL's information_schema database:
+
+insert into SCHEMATA values (NULL, "test", "utf8", "utf8_general_ci", NULL);
+insert into TABLES select * from information_schema.tables where table_schema = 'test';
+insert into COLUMNS select * from information_schema.columns where table_schema = 'test';
+insert into KEY_COLUMN_USAGE select * from information_schema.KEY_COLUMN_USAGE where table_schema = 'test';
+
+
+
+Old out of date info
+====
+
+* Running the Shepherd:
+
+com.relationalcloud.backend.Shepherd -Pcoord.properties -Dprop=src/main/resources/config/router.properties
