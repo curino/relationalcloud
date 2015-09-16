@@ -1,0 +1,1 @@
+This project contains the source code of the OLTP DB Partitioner Schism, and the corresponding middleware runtime.
